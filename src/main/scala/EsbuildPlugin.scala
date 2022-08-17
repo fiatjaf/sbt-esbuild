@@ -20,52 +20,55 @@ object EsbuildPlugin extends AutoPlugin {
     case object Yarn extends PackageManager { override def toString = "yarn" }
     case object Npm extends PackageManager { override def toString = "npm" }
 
-    val jsPackageManager = settingKey[PackageManager](
+    val esPackageManager = settingKey[PackageManager](
       "Which package manager to use when installing dependencies."
     )
     val esbuildOptions = settingKey[Seq[String]](
       "Extra options to pass to esbuild CLI invocation."
     )
-    val jsInstall =
-      taskKey[Unit]("Install packages from npmDependencies.")
-    val jsBundle = taskKey[Unit](
+    val esInstall =
+      taskKey[Unit](
+        "Install packages from npmDependencies and npmTransitiveDependencies."
+      )
+    val esBuild = taskKey[Unit](
       "Transpile all the generated JavaScript and dependencies into a single file."
     )
   }
 
   import autoImport._
   override lazy val globalSettings: Seq[Setting[_]] = Seq(
-    jsPackageManager := Yarn,
+    esPackageManager := Yarn,
     esbuildOptions := Seq("--sourcemap")
   )
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    jsInstall := {
-      val deps = (Compile / npmDependencies).value
-      val install = jsPackageManager.value match {
+    esInstall := {
+      val install = esPackageManager.value match {
         case Yarn => "yarn"
         case Npm  => "npm install"
       }
 
-      Process("mkdir -p target/esbuild", baseDirectory.value).run().exitValue()
+      exec(baseDirectory.value.absolutePath, "mkdir -p target/esbuild")
+
+      val deps =
+        ("esbuild" -> "latest") +: (
+          (Compile / npmTransitiveDependencies).value.map(_._2).flatten ++
+            (Compile / npmTransitiveDependencies).value.map(_._2).flatten
+        ).toSet.toList
 
       val packageJsonContents =
-        "{\"dependencies\":{" ++ (("esbuild" -> "latest") +: deps)
+        "{\"dependencies\":{" ++ (deps)
           .map({ case (name, version) =>
             "\"" ++ name ++ "\":\"" ++ version ++ "\""
           })
           .mkString(",") ++ "}}"
+
       Files.write(
         Paths.get(s"${baseDirectory.value}/target/esbuild/package.json"),
         packageJsonContents.getBytes()
       )
 
-      println(s"> $install")
-      Process(install, new File(baseDirectory.value, "/target/esbuild"))
-        .run(
-          ProcessLogger(msg => println(s"> $msg"), msg => println(s"> $msg"))
-        )
-        .exitValue()
+      exec(s"${baseDirectory.value}/target/esbuild", install)
     },
     perStageBundle(Stage.FastOpt),
     perStageBundle(Stage.FullOpt)
@@ -78,22 +81,46 @@ object EsbuildPlugin extends AutoPlugin {
       case Stage.FullOpt => (fullLinkJS, "fullopt", "--minify")
     }
 
-    stageTask / jsBundle := {
-      jsInstall.value
+    stageTask / esBuild := {
+      esInstall.value
+
+      val base = s"${baseDirectory.value}/target/esbuild"
+      val extra = esbuildOptions.value.mkString(" ")
       val filename =
         (Compile / stageTask).value.data.publicModules.head.jsFileName
-      val entrypoint =
-        s"${baseDirectory.value}/target/scala-${scalaVersion.value}/${name.value}-$stageSuffix/$filename"
-      val command =
-        s"${baseDirectory.value}/target/esbuild/node_modules/.bin/esbuild --bundle ${esbuildOptions.value
-            .mkString(" ")} $options --outfile=${baseDirectory.value}/target/esbuild/bundle.js $entrypoint"
-      println("> ")
-      println(s"> $command")
-      Process(command, new File(baseDirectory.value, "/target/esbuild"))
-        .run(
-          ProcessLogger(msg => println(s"> $msg"), msg => println(s"> $msg"))
-        )
-        .exitValue()
+
+      exec(
+        base,
+        s"ln -f ${baseDirectory.value}/target/scala-${scalaVersion.value}/${name.value}-$stageSuffix/$filename ./"
+      )
+
+      (Compile / stageTask).value.data.publicModules.head.sourceMapName
+        .foreach { f =>
+          exec(
+            base,
+            s"ln -f ${baseDirectory.value}/target/scala-${scalaVersion.value}/${name.value}-$stageSuffix/$f ./"
+          )
+        }
+
+      exec(
+        base,
+        s"node_modules/.bin/esbuild --bundle --color $options $extra --outfile=$base/bundle.js $filename"
+      )
     }
+  }
+
+  def exec(base: String, command: String): Unit = {
+    println("~> ")
+    println(s"~> $command")
+    val code = Process(command, new File(base))
+      .run(
+        ProcessLogger(
+          msg => System.out.println(s" > $msg"),
+          msg => System.err.println(s"2> $msg")
+        )
+      )
+      .exitValue()
+
+    if (code != 0) throw new RuntimeException(s"code $code")
   }
 }
