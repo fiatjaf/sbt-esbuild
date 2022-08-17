@@ -1,4 +1,4 @@
-# sbt-esbuild [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.fiatjaf/sbt-esbuild_2.12/badge.svg)](https://repo1.maven.org/maven2/com/fiatjaf/sbt-esbuild_2.12/)
+# sbt-esbuild [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.fiatjaf/sbt-esbuild_2.12_1.0/badge.svg)](https://repo1.maven.org/maven2/com/fiatjaf/sbt-esbuild_2.12_1.0/)
 
 A very simple plugin that bundles your generated ScalaJS code with its JavaScript dependencies _and the JavaScript_ dependencies of its dependencies.
 
