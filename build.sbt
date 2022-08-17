@@ -1,6 +1,12 @@
-version := "0.1.0"
-organization := "com.fiatjaf"
-homepage := Some(url("https://github.com/fiatjaf/sbt-esbuild"))
+ThisBuild / tlBaseVersion := "0.1"
+
+ThisBuild / organization := "com.fiatjaf"
+ThisBuild / organizationName := "nbd"
+ThisBuild / startYear := Some(2022)
+ThisBuild / licenses := Seq(License.Apache2)
+ThisBuild / developers := List(tlGitHubDev("fiatjaf", "fiatjaf"))
+
+ThisBuild / tlSonatypeUseLegacyHost := false
 
 lazy val root = (project in file("."))
   .enablePlugins(SbtPlugin)
