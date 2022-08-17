@@ -48,7 +48,10 @@ object EsbuildPlugin extends AutoPlugin {
         case Npm  => "npm install"
       }
 
-      exec(baseDirectory.value.absolutePath, "mkdir -p target/esbuild")
+      exec(
+        baseDirectory.value.absolutePath,
+        s"mkdir -p ${target.value}/esbuild"
+      )
 
       val deps =
         ("esbuild" -> "latest") +: (
@@ -64,11 +67,11 @@ object EsbuildPlugin extends AutoPlugin {
           .mkString(",") ++ "}}"
 
       Files.write(
-        Paths.get(s"${baseDirectory.value}/target/esbuild/package.json"),
+        Paths.get(s"${target.value}/esbuild/package.json"),
         packageJsonContents.getBytes()
       )
 
-      exec(s"${baseDirectory.value}/target/esbuild", install)
+      exec(s"${target.value}/esbuild", install)
     },
     perStageBundle(Stage.FastOpt),
     perStageBundle(Stage.FullOpt)
@@ -76,29 +79,30 @@ object EsbuildPlugin extends AutoPlugin {
 
   @nowarn
   def perStageBundle(stage: Stage): Setting[_] = {
-    val (stageTask, stageSuffix, options) = stage match {
-      case Stage.FastOpt => (fastLinkJS, "fastopt", "")
-      case Stage.FullOpt => (fullLinkJS, "fullopt", "--minify")
+    val (stageTask, options) = stage match {
+      case Stage.FastOpt => (fastLinkJS, "")
+      case Stage.FullOpt => (fullLinkJS, "--minify")
     }
 
     stageTask / esBuild := {
       esInstall.value
 
-      val base = s"${baseDirectory.value}/target/esbuild"
       val extra = esbuildOptions.value.mkString(" ")
+      val base = s"${target.value}/esbuild"
+      val buildDir = (Compile / stageTask / scalaJSLinkerOutputDirectory).value
       val filename =
         (Compile / stageTask).value.data.publicModules.head.jsFileName
 
       exec(
         base,
-        s"ln -f ${baseDirectory.value}/target/scala-${scalaVersion.value}/${name.value}-$stageSuffix/$filename ./"
+        s"ln -f ${buildDir}/$filename ./"
       )
 
       (Compile / stageTask).value.data.publicModules.head.sourceMapName
         .foreach { f =>
           exec(
             base,
-            s"ln -f ${baseDirectory.value}/target/scala-${scalaVersion.value}/${name.value}-$stageSuffix/$f ./"
+            s"ln -f ${buildDir}/$f ./"
           )
         }
 
