@@ -16,7 +16,7 @@ addSbtPlugin("com.fiatjaf" %% "sbt-esbuild" % "0.1.0")
 
 In your code, when [writing facades](http://www.scala-js.org/doc/interoperability/facade-types.html), use `@JSImport` to refer to the JavaScript modules you're importing (they will get translated to `require()` or `import` calls and later transpiled by `esbuild`).
 
-In your build.sbt, enable the plugin, include your dependencies and optionally set the linker to use ES modules:
+In your build.sbt, enable the plugin and include your dependencies:
 
 ```diff
 -enablePlugins(ScalaJSPlugin)
@@ -26,8 +26,6 @@ In your build.sbt, enable the plugin, include your dependencies and optionally s
 +  "left-pad" -> "latest",
 +  "garbage" -> "0.0.0"
 +)
-+
-+scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) }
 ```
 
 If you are importing another Scala library that has declared `npmDependencies` using [sbt-npm-dependencies](https://github.com/davenverse/sbt-npm-dependencies) (for example, [scoin](https://github.com/fiatjaf/scoin)) these dependencies will all be fetched automatically and the `@JSImport` annotations from that library will all work.
