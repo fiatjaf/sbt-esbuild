@@ -2,7 +2,7 @@
 
 A very simple plugin that bundles your generated ScalaJS code with its JavaScript dependencies _and the JavaScript_ dependencies of its dependencies.
 
-Uses [sbt-npm-dependencies](https://github.com/davenverse/sbt-npm-dependencies) to gather the list of the dependencies, installs them with [npm](https://www.npmjs.com) or [yarn](https://yarnpkg.com) and them bundles everything with [esbuild](https://esbuild.github.io/).
+Uses [sbt-npm-dependencies](https://github.com/davenverse/sbt-npm-dependencies) to gather the list of the dependencies, installs them with [npm](https://www.npmjs.com), [yarn](https://yarnpkg.com) or [bun](https://bun.sh) and them bundles everything with [esbuild](https://esbuild.github.io/).
 
 ## Installation
 
@@ -26,6 +26,8 @@ In your build.sbt, enable the plugin and include your dependencies:
 +  "left-pad" -> "latest",
 +  "garbage" -> "0.0.0"
 +)
++
++esPackageManager = Yarn
 ```
 
 If you are importing another Scala library that has declared `npmDependencies` using [sbt-npm-dependencies](https://github.com/davenverse/sbt-npm-dependencies) (for example, [scoin](https://github.com/fiatjaf/scoin)) these dependencies will all be fetched automatically and the `@JSImport` annotations from that library will all work.
@@ -33,6 +35,6 @@ If you are importing another Scala library that has declared `npmDependencies` u
 On `sbt`, call `fastLinkJS / esBuild` to install dependencies, build and bundle. Or `~fastLinkJS / esBuild` to build continuously. The resulting JS bundle will be written to `target/esbuild/bundle.js` (same with `fullLinkJS`).
 
 You can also:
-  - set `esPackageManager` to `Npm` or `Yarn` for what to use when installing dependencies (defaults to `Yarn`);
+  - set `esPackageManager` to `Npm`, `Yarn` or `Bun` for what to use when installing dependencies (defaults to `Npm`);
   - call `esInstall` to just install the JS modules; or
   - set `esBuildOptions` (defaults to `Seq("--sourcemap")`) to pass extra options to [esbuild](https://esbuild.github.io/api/#simple-options) (it is great since most things work either out-of-the-box or as command-line arguments with no need for bloated configuration files).

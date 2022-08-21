@@ -17,8 +17,9 @@ object EsbuildPlugin extends AutoPlugin {
 
   object autoImport {
     sealed trait PackageManager
-    case object Yarn extends PackageManager { override def toString = "yarn" }
     case object Npm extends PackageManager { override def toString = "npm" }
+    case object Yarn extends PackageManager { override def toString = "yarn" }
+    case object Bun extends PackageManager { override def toString = "bun" }
 
     val esPackageManager = settingKey[PackageManager](
       "Which package manager to use when installing dependencies."
@@ -37,7 +38,7 @@ object EsbuildPlugin extends AutoPlugin {
 
   import autoImport._
   override lazy val globalSettings: Seq[Setting[_]] = Seq(
-    esPackageManager := Yarn,
+    esPackageManager := Npm,
     esbuildOptions := Seq("--sourcemap")
   )
 
@@ -46,6 +47,7 @@ object EsbuildPlugin extends AutoPlugin {
       val install = esPackageManager.value match {
         case Yarn => "yarn"
         case Npm  => "npm install"
+        case Bun  => "bun install"
       }
 
       exec(
