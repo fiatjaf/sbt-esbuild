@@ -9,7 +9,7 @@ Uses [sbt-npm-dependencies](https://github.com/davenverse/sbt-npm-dependencies) 
 Add this to your `project/plugins.sbt`:
 
 ```scala
-addSbtPlugin("com.fiatjaf" %% "sbt-esbuild" % "0.1.0")
+addSbtPlugin("com.fiatjaf" %% "sbt-esbuild" % "0.1.1")
 ```
 
 ## Usage
